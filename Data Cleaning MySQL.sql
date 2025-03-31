@@ -1,3 +1,5 @@
+/* creating a copy of the raw table*/
+
 create table layoffscopy
 like layoffs;
 
@@ -6,6 +8,7 @@ select * from layoffs;
 
 select * from layoffscopy;
 
+-- 1. Remove Duplicates
 
 select *, row_number() over(
 partition by Company, Location_HQ, Industry, Laid_Off_Count, 'Date', Funds_Raised, Stage, Date_Added, Country, Percentage)
@@ -20,9 +23,12 @@ from layoffscopy)
 select * from duplicate_cte
 where row_num > 1;
 
+-- select any company from the table to confirm there are duplicates
+
 select * from layoffscopy
 where Company = 'Silo';
 
+-- create a new table and add those row numbers in. Then delete where row numbers are over 1, then delete that column
 
 CREATE TABLE `layoffscopy1` (
   `Company` text,
@@ -46,19 +52,27 @@ partition by Company, Location_HQ, Industry, Laid_Off_Count, 'Date', Funds_Raise
 as row_num
 from layoffscopy;
 
+-- these are the ones we want to delete where the row number is > 1
+
 select * from layoffscopy1
 where row_num > 1;
 
 delete from layoffscopy1
 where row_num > 1;
 
+-- select the same company as example to check if the duplicates are deleted.
+
 select * from layoffscopy1
 where Company = 'Silo';
+
+-- 2. Standardize Data
 
 select Company, trim(Company) from layoffscopy1;
 
 update layoffscopy1
 set Company = trim(Company);
+
+-- 3. Setting up the correct data type
 
 alter table layoffscopy1
 modify column `Date` date;
@@ -78,6 +92,8 @@ where Percentage = '';
 alter table layoffscopy1
 modify column Percentage decimal(10,1);	
 
+-- 4. Handling Nulls
+
 select * from layoffscopy1
 where Laid_Off_Count is null
 and Percentage is null;
@@ -86,6 +102,8 @@ delete
 from layoffscopy1
 where Laid_Off_Count is null
 and Percentage is null;
+
+-- Deleting unwanted columns
 
 alter table layoffscopy1
 drop column row_num;
